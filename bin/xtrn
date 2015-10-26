@@ -4,7 +4,8 @@ require 'yaml'
 require 'optparse'
 
 options = {
-  file: 'Externals'
+  file:    'Externals',
+  verbose: false
 }
 
 OptionParser.new do |opts|
