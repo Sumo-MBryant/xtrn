@@ -3,26 +3,52 @@ require 'yaml'
 module Xtrn
   class Directory
 
-    def initialize(config, executor)
-      @config = config
+    DEFAULT_OPTS = {
+      verbose: false
+    }
+
+    def initialize(config, executor, opts={})
+      opts      = DEFAULT_OPTS.merge(opts)
+
+      @config   = config
       @executor = executor
+      @verbose  = opts[:verbose]
+    end
+
+    def revision(args, url)
+      res = @executor.exec("svn info #{args.join(' ')} #{url}")
+      YAML.load(res)['Last Changed Rev']
+    end
+
+    def do_upgrade(args, path)
+      @executor.exec("svn upgrade #{args.join(' ')} #{path}")
+    end
+
+    def do_update(args, path)
+      @executor.exec("svn update #{args.join(' ')} #{path}")
+    end
+
+    def do_checkout(args, url, path)
+      rev = revision(args, url)
+      @executor.exec("svn checkout #{args.join(' ')} -r#{rev} #{url} #{path}")
     end
 
     def update!
       @config.each do |entry|
-        username = entry['username'] ? "--username '#{entry['username']}' " : ''
-        password = entry['password'] ? "--password '#{entry['password']}' " : ''
+        args = []
+        url  = entry['url']
+        path = entry['path']
 
-        standard_args = "--no-auth-cache" unless entry['cache_credentials']
+        args << (entry['username'] ? "--username '#{entry['username']}'" : '')
+        args << (entry['password'] ? "--password '#{entry['password']}'" : '')
+        args << (entry['cache_credentials'] ? '' : '--no-auth-cache')
 
-        x = @executor.exec("svn info #{username}#{password}#{standard_args} #{entry['url']}")
-        rev = YAML.load(x)["Last Changed Rev"]
-        cmd = if File.directory?(entry['path'])
-          'update'
+        if File.directory?(path)
+          do_upgrade(args, path)
+          do_update(args, path)
         else
-          'checkout'
+          do_checkout(args, url, path)
         end
-        @executor.exec("svn #{cmd} #{username}#{password}#{standard_args} -r#{rev} #{entry['url']} #{entry['path']}")
       end
 
       def updated_gitignore(original_gitignore)

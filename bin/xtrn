@@ -1,8 +1,21 @@
 #!/usr/bin/env ruby
 require 'xtrn'
 require 'yaml'
+require 'optparse'
 
-dir = Xtrn::Directory.new(YAML.load(File.open('Externals', 'rb', &:read)), Xtrn::Executor.new)
+options = {
+  file: 'Externals'
+}
+
+OptionParser.new do |opts|
+  opts.banner = 'Usage: xtrn [options]'
+  opts.on('-v', '--[no-]verbose', 'Run verbosely') { |v| options[:verbose] = v }
+  opts.on('-f', '--file FILE', 'File containing externals definition.') { |f| options[:file] = f }
+end.parse!
+
+raise OptionParser::InvalidArgument.new("File #{options[:file]} doesn't exist.") unless File.exists?(options[:file])
+
+dir = Xtrn::Directory.new(YAML::load_file(options[:file]), Xtrn::Executor.new(options), options)
 dir.update!
 
 GITIGNORE = '.gitignore'
@@ -10,4 +23,7 @@ GITIGNORE = '.gitignore'
 gitignore_contents = File.file?(GITIGNORE) ? File.open(GITIGNORE, 'rb', &:read) : ''
 updated_gitignore_contents = dir.updated_gitignore(gitignore_contents)
 
-File.open(GITIGNORE, 'wb') {|f|f.write(updated_gitignore_contents)} unless updated_gitignore_contents == gitignore_contents
+unless updated_gitignore_contents == gitignore_contents
+  puts 'Updating .gitignore contents.'
+  File.open(GITIGNORE, 'wb') {|f|f.write(updated_gitignore_contents)}
+end
