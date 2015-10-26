@@ -24,6 +24,6 @@ gitignore_contents = File.file?(GITIGNORE) ? File.open(GITIGNORE, 'rb', &:read) 
 updated_gitignore_contents = dir.updated_gitignore(gitignore_contents)
 
 unless updated_gitignore_contents == gitignore_contents
-  puts 'Updating .gitignore contents.'
+  puts 'Updating .gitignore contents.' if options[:verbose]
   File.open(GITIGNORE, 'wb') {|f|f.write(updated_gitignore_contents)}
 end
