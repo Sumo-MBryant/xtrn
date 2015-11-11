@@ -21,7 +21,8 @@ module Xtrn
     end
 
     def do_upgrade(args, path)
-      @executor.exec("svn upgrade #{args.join(' ')} #{path}")
+      # Allow SVN v1.6 clients which do not support "upgrade" to fail silently.
+      @executor.exec("svn upgrade #{args.join(' ')} #{path}", true)
     end
 
     def do_update(args, path)
