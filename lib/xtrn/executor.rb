@@ -15,10 +15,10 @@ module Xtrn
     def exec(cmd, ignore_failure=false)
       puts "Exec: #{cmd}" if @verbose
 
-      stdout, stderr, status = Open3.capture3(cmd)
+      stdout = `#{cmd}`
 
-      unless status.success? or ignore_failure
-        puts "Aborting due to execution error:\n#{stderr}"
+      unless $?.success? or ignore_failure
+        puts "Aborting due to execution error."
         exit(1)
       end
 
